@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Chat</title>
+    <style>
+        body { font-family: Arial; }
+        #chat {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 8px;
+            margin: 10px 0;
+        }
+        input { margin: 5px 0; }
+    </style>
+</head>
+<body>
+
+<h2>Real-Time Chat</h2>
+
+<input type="text" id="username" placeholder="Enter username" />
+<button id="joinBtn" onclick="connect()">Join Chat</button>
+
+<div id="chat"></div>
+
+<input type="text" id="message" placeholder="Type a message..." disabled />
+<button id="sendBtn" onclick="sendMessage()" disabled>Send</button>
+<button id="leaveBtn" onclick="leaveChat()" disabled>Leave</button>
+
+<script>
+    let socket;
+
+    function connect() {
+        const username = document.getElementById("username").value.trim();
+        if (!username) {
+            alert("Please enter a username");
+            return;
+        }
+
+        document.getElementById("joinBtn").disabled = true;
+
+        socket = new WebSocket("ws://localhost:8765");
+
+        socket.onopen = () => {
+            socket.send(username);
+            enableChat(true);
+        };
+
+        socket.onmessage = (event) => {
+            const chat = document.getElementById("chat");
+            const msg = document.createElement("div");
+            msg.textContent = event.data;
+            chat.appendChild(msg);
+            chat.scrollTop = chat.scrollHeight;
+        };
+
+        socket.onclose = () => {
+            enableChat(false);
+            document.getElementById("joinBtn").disabled = false;
+        };
+
+        socket.onerror = () => {
+            alert("WebSocket error");
+            enableChat(false);
+            document.getElementById("joinBtn").disabled = false;
+        };
+    }
+
+    function sendMessage() {
+        const input = document.getElementById("message");
+        if (input.value.trim() !== "") {
+            socket.send(input.value);
+            input.value = "";
+        }
+    }
+
+    function leaveChat() {
+        if (socket) {
+            socket.close();
+        }
+    }
+
+    function enableChat(enable) {
+        document.getElementById("message").disabled = !enable;
+        document.getElementById("sendBtn").disabled = !enable;
+        document.getElementById("leaveBtn").disabled = !enable;
+    }
+</script>
+
+</body>
+</html>
